@@ -7,20 +7,21 @@
 .PARAMETER PublicFolder
     The name of the public folder.
 .PARAMETER PublicFolderOwner
-    The alias of the user or group you want to set as the owner.
+    The alias of the user or group you want to set as the "Publishing Editor".
 .PARAMETER DefaultPermission
     The permission that you are setting the "Default" permission to.
-    The options are Owner, Publishing Editor, Editor, Publishing Author
+    The options are Owner, Publishing Editor, Editor, Publishing Author,
     Author, Nonediting Author, Reviewer, Contributor and None.  The
     default permission is "None".
 .PARAMETER AnonymousPermission
     The permission that you are setting the "Anonymous" permission to.
-    The options are Owner, Publishing Editor, Editor, Publishing Author
+    The options are Owner, Publishing Editor, Editor, Publishing Author,
     Author, Nonediting Author, Reviewer, Contributor and None.  The
     default permission is "None".
 .EXAMPLE
     C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission None -AnonymousPermission None
-    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias"
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission "Publishing Editor" -AnonymousPermission Author
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" 
 .LINK
     https://github.com/DoctorKisow/ResetPublicFolderPermissions 
 .NOTES
@@ -33,9 +34,9 @@ Param(
      [string]$PublicFolder,
      [Parameter(Mandatory=$True, Position=1)]
      [string]$PublicFolderOwner,
-     [Parameter(Mandatory=$False, Position=2)]
+     [Parameter(Mandatory=$True, Position=2)]
      [string]$DefaultPermission,
-     [Parameter(Mandatory=$False, Position=3)]
+     [Parameter(Mandatory=$True, Position=3)]
      [string]$AnonymousPermission
 )
 
@@ -57,12 +58,14 @@ Function ErrorChecking
 
     if ("Owner", "Publishing Editor", "Editor", "Publishing Author", "Author", "Nonediting Author", "Reviewer", "Contributor", "None" -notcontains $DefaultPermission)
     {
-        $DefaultPermission = "None"
+         Write-Host "The Default permission $PublicFolderOwner is invalid."
+         exit 1
     }
 
     if ("Owner", "Publishing Editor", "Editor", "Publishing Author", "Author", "Nonediting Author", "Reviewer", "Contributor", "None" -notcontains $AnonymousPermission)
     {
-        $AnonymousPermission = "None"
+         Write-Host "The Default permission $AnonymousFolderOwner is invalid."
+         exit 1
     }
 }
 
@@ -87,21 +90,23 @@ Function VerifyUpdates
 
 Function UpdatePublicFolderSecurity
 {
-    $PubFolder = Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited 
-    $PubFolderPermission = $PubFolder | Get-PublicFolderClientPermission
+    # Remove all permissions from the public folder.
+    Get-PublicFolder -identity "$PublicFolder" -Recurse -ResultSize Unlimited | Get-PublicFolderClientPermission | Remove-PublicFolderClientPermission -Confirm:$false
 
-    # Recursively remove permissions from all folders and their sub-folders.
-    foreach ($PubFolderPermission in $PubFolder) 
-    {
-        Remove-PublicFolderClientPermission -Identity $PubFolderPermission.Identity -User $PubFolderPermission.User.DisplayName -Confirm:$false
-    }
+    # Set the owner permissions to the Exchange public folder administrators group.
+    Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited | Add-PublicFolderClientPermission -User "SECExchangePublicFolderAdministrators" -AccessRights Owner
 
-    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "SECExchangePublicFolderAdministrators" -AccessRights Owner
     # Obligatory and will not be needed once permissions have propogated.
-    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "mkisow" -AccessRights Owner
-    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "$PublicFolderOwner" -AccessRights Owner
-    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User Default -AccessRights $DefaultPermission
-    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User Anonymous -AccessRights $AnonymousPermission
+    Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited | Add-PublicFolderClientPermission -User "mkisow" -AccessRights Owner
+
+    # Set the "Publishing Editor" permissions to the group supplied from the script.
+    Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited | Add-PublicFolderClientPermission -User "$PublicFolderOwner" -AccessRights "Publishing Editor"
+
+    # Set the default user permissions.
+    Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited | Add-PublicFolderClientPermission -User Default -AccessRights $DefaultPermission
+
+    # Set the anonymous user permissions.
+    Get-PublicFolder "$PublicFolder" -Recurse -ResultSize Unlimited | Add-PublicFolderClientPermission -User Anonymous -AccessRights $AnonymousPermission
 }
 
 ### Main Script
