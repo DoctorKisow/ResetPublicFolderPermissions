@@ -6,3 +6,8 @@ This script will reset then reapply public folder security back to baseline with
 
 # Usage
     Set-MailboxPermissions -PublicFolder <public folder> -PublicFolderOwner <alias> -DefaultPermission <permission> -AnonymousPermission <permission>
+
+# Example
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission None -AnonymousPermission None
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission PublishingEditor -AnonymousPermission Author
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" 
