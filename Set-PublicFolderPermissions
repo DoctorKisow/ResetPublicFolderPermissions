@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    A script to reset then reapply public folder permissions.
+    A script to reset then re-apply public folder permissions.
 .DESCRIPTION
-    This script will reset then reapply public folder security back to baseline with the 
+    This script will reset then re-apply public folder security back to baseline with the 
     "Default" and "Anonymous" permissions set to "None".
 .PARAMETER PublicFolder
     The name of the public folder.
@@ -19,8 +19,8 @@
     Author, Nonediting Author, Reviewer, Contributor and None.  The
     default permission is "None".
 .EXAMPLE
-    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission None -AnonymousPermission None
-    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias"
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder <public folder> -PublicFolderOwner <alias>
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder <public folder> -PublicFolderOwner <alias> -DefaultPermission <permission> -AnonymousPermission <permission>
 .LINK
     https://github.com/DoctorKisow/ResetPublicFolderPermissions 
 .NOTES
