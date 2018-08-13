@@ -19,8 +19,8 @@
     Author, Nonediting Author, Reviewer, Contributor and None.  The
     default permission is "None".
 .EXAMPLE
-    C:\PS> .\Set-PublicFolderPermissions -PublicFolder <public folder> -PublicFolderOwner <alias>
-    C:\PS> .\Set-PublicFolderPermissions -PublicFolder <public folder> -PublicFolderOwner <alias> -DefaultPermission <permission> -AnonymousPermission <permission>
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias" -DefaultPermission None -AnonymousPermission None
+    C:\PS> .\Set-PublicFolderPermissions -PublicFolder "\Public Folder" -PublicFolderOwner "UserAlias"
 .LINK
     https://github.com/DoctorKisow/ResetPublicFolderPermissions 
 .NOTES
@@ -41,16 +41,17 @@ Param(
 
 Function ErrorChecking
 {
-    if (-not Get-PublicFolder "$PublicFolder" -ErrorAction 'SilentlyContinue')
+    $IsPubFolder = Get-PublicFolder "$PublicFolder" -ErrorAction 'SilentlyContinue'
+    if (-not $ISPubFolder)
     {
          Write-Host "The group $PublicFolder does not exist."
          exit 1
     }
     
-    $IsUser =  $PublicFolderOwner -ErrorAction 'SilentlyContinue'
+    $IsUser = Get-Recipient -ANR $PublicFolderOwner -ErrorAction 'SilentlyContinue'
     if (-not $IsUser)
     {
-         Write-Host "The mailbox $Mailbox does not exist or is not a mailbox."
+         Write-Host "The owner $PublicFolderOwner does not exist or is not a mailbox."
          exit 1
     }
 
@@ -61,7 +62,7 @@ Function ErrorChecking
 
     if ("Owner", "Publishing Editor", "Editor", "Publishing Author", "Author", "Nonediting Author", "Reviewer", "Contributor", "None" -notcontains $AnonymousPermission)
     {
-        $DefaultPermission = "None"
+        $AnonymousPermission = "None"
     }
 }
 
@@ -92,16 +93,15 @@ Function UpdatePublicFolderSecurity
     # Recursively remove permissions from all folders and their sub-folders.
     foreach ($PubFolderPermission in $PubFolder) 
     {
-        write-host $PubFolderPermission.User.DisplayName $PubFolderPermission.Identity
-        Remove-PublicFolderClientPermission $PubFolderPermission.Identity -User $PubFolderPermission.User.DisplayName -Confirm:$false
+        Remove-PublicFolderClientPermission -Identity $PubFolderPermission.Identity -User $PubFolderPermission.User.DisplayName -Confirm:$false
     }
 
-    Get-PublicFolder "\Contracting Services" -Recurse | Add-PublicFolderClientPermission -User "SECExchangePublicFolderAdministrators" -AccessRights Owner
-    # Obligatory and will not need once permissions have propogated.
-    Get-PublicFolder "\Contracting Services" -Recurse | Add-PublicFolderClientPermission -User "mkisow" -AccessRights Owner
-    Get-PublicFolder "\Contracting Services" -Recurse | Add-PublicFolderClientPermission -User "$PublicFolderOwner" -AccessRights Owner
-    Get-PublicFolder "\Contracting Services" -Recurse | Add-PublicFolderClientPermission -User Default -AccessRights None
-    Get-PublicFolder "\Contracting Services" -Recurse | Add-PublicFolderClientPermission -User Anonymous -AccessRights None
+    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "SECExchangePublicFolderAdministrators" -AccessRights Owner
+    # Obligatory and will not be needed once permissions have propogated.
+    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "mkisow" -AccessRights Owner
+    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User "$PublicFolderOwner" -AccessRights Owner
+    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User Default -AccessRights $DefaultPermission
+    Get-PublicFolder "$PublicFolder" -Recurse | Add-PublicFolderClientPermission -User Anonymous -AccessRights $AnonymousPermission
 }
 
 ### Main Script
